@@ -1,0 +1,2904 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        #stats {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.5;
+            display: none;
+        }
+        #buildingInfo {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-family: monospace;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        #searchPanel {
+            position: fixed;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            font-family: monospace;
+        }
+        .searchButton {
+            display: block;
+            margin: 5px 0;
+            padding: 8px;
+            width: 100%;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid white;
+            color: white;
+            cursor: pointer;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .searchButton:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        #buildingCount {
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        #viewControls {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-family: monospace;
+        }
+        #instructions {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 5px;
+            color: white;
+            font-family: monospace;
+            text-align: center;
+            display: none;
+        }
+        #miniMap {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 5px;
+            border: 2px solid white;
+            display: none;
+        }
+        #mapLegend {
+            position: fixed;
+            bottom: 220px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+        .legendItem {
+            display: flex;
+            align-items: center;
+            margin: 2px 0;
+        }
+        .legendColor {
+            width: 12px;
+            height: 12px;
+            margin-right: 5px;
+            border: 1px solid white;
+        }
+        #cardinalDirections {
+            position: fixed;
+            bottom: 220px;
+            right: 95px;
+            color: white;
+            font-family: monospace;
+            font-weight: bold;
+            pointer-events: none;
+            display: none;
+        }
+        #buildingSelector {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 5px;
+            color: white;
+            font-family: monospace;
+            display: none;
+            max-width: 300px;
+            z-index: 1000;
+        }
+        .buildingOption {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid white;
+            color: white;
+            cursor: pointer;
+            border-radius: 3px;
+            text-align: left;
+            width: 100%;
+        }
+        .buildingOption:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        #speedometer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            text-align: center;
+            display: none;
+        }
+        #navInfo {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            text-align: center;
+            display: none;
+        }
+        .speed-value {
+            font-size: 24px;
+            margin: 5px 0;
+        }
+        .speed-unit {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        /* Add this to existing styles */
+        #driveModeToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: background-color 0.3s;
+        }
+        
+        #driveModeToggle:hover {
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+        
+        #driveModeToggle.manual {
+            border-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div id="stats"></div>
+    
+    <div id="buildingInfo"></div>
+    
+    <div id="searchPanel">
+        <div>Find Buildings:</div>
+        <button class="searchButton" onclick="highlightBuildingType('hospital')">Hospitals</button>
+        <button class="searchButton" onclick="highlightBuildingType('school')">Schools</button>
+        <button class="searchButton" onclick="highlightBuildingType('mall')">Malls</button>
+        <button class="searchButton" onclick="highlightBuildingType('park')">Parks</button>
+        <button class="searchButton" onclick="highlightBuildingType('office')">Offices</button>
+        <button class="searchButton" onclick="highlightBuildingType('home')">Homes</button>
+        <button class="searchButton" onclick="clearHighlights()">Clear All</button>
+        <div id="buildingCount"></div>
+    </div>
+    
+    <div id="viewControls">
+        <button class="searchButton" onclick="toggleViewMode()">Toggle First-Person Mode</button>
+        <button class="searchButton" onclick="toggleMiniMap()">Toggle Mini-Map</button>
+    </div>
+    <div id="instructions">
+        Click to start<br><br>
+        WASD - Move<br>
+        Mouse - Look around<br>
+        ESC - Exit first-person mode
+    </div>
+    
+    <div id="miniMap"></div>
+    
+    <div id="mapLegend">
+        <div style="margin-bottom: 5px;">Legend:</div>
+    </div>
+    <div id="cardinalDirections">N</div>
+    
+    <div id="buildingSelector" style="display: none;">
+        <h2>Select Destination</h2>
+        <div id="buildingOptions"></div>
+    </div>
+    
+    <div id="speedometer">
+        <div>SPEED</div>
+        <div class="speed-value">0</div>
+        <div class="speed-unit">units/s</div>
+    </div>
+    <div id="navInfo">
+        <div id="nextTurn">Next Turn: --</div>
+        <div id="distanceToTarget">Distance: --</div>
+    </div>
+    
+    <!-- Add this new button for toggling drive mode -->
+    <button id="driveModeToggle">Switch to Manual Driving</button>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+  <script>
+        // Global variables
+        let scene, camera, renderer;
+        let vehicle;
+        let controls;
+        let moveForward = false;
+        let moveBackward = false;
+        let steerLeft = false;    // Changed from moveLeft for clarity
+        let steerRight = false;   // Changed from moveRight for clarity
+        let canJump = false;
+        let prevTime = performance.now();
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let moveSpeed = 10; // Base speed reduced to 10 for maximum 10 km/hr
+        
+        // Auto-driving variables
+        let isAutoDriving = false;
+        let currentRouteIndex = 0;
+        let targetSpeed = 5;  // Set to 5 km/h for regular road driving
+        let steeringAngle = 0;
+        let arrivalThreshold = 2;
+        
+        // New physics variables
+        let currentSpeed = 0;
+        let acceleration = 0;
+        let brake = 0;
+        const ACCELERATION_RATE = 15;    // Units per second squared
+        const BRAKING_POWER = 30;        // Braking force
+        const MAX_SPEED = 50;            // Maximum speed
+        const DRAG_COEFFICIENT = 0.95;   // Air resistance (lower = more drag)
+        const TURNING_RADIUS = 0.03;     // Base turning radius
+        const SPEED_TURNING_FACTOR = 0.8; // How much speed affects turning
+        const INERTIA_FACTOR = 0.98;     // How much momentum is preserved
+
+        // Auto-drive physics constants
+        const AUTO_DRIVE_CONFIG = {
+            acceleration: 5,         // Matches traffic acceleration
+            braking: 15,            // Matches traffic braking
+            turnSpeed: 0.03,        // Base turning speed
+            speedTurnFactor: 0.8,   // How much speed affects turning
+            minSpeed: 5,            // Minimum speed during turns
+            maxSpeed: 15,           // Matches traffic speed
+            arrivalDistance: 8      // Distance to start slowing for next marker
+        };
+
+        let orbitControls;
+        let infoDiv;
+        let highlightedBuilding = null;
+        let originalBuildingColor = null;
+        let highlightedBuildings = [];
+        let originalColors = new Map();
+        let firstPersonControls = null;
+        let isFirstPerson = false;
+        let currentControls = null;
+        let miniMapScene, miniMapCamera, miniMapRenderer;
+        let playerMarker;
+        let isMiniMapVisible = false;
+        let compassRose;
+        let mainLight, ambientLight;
+        let thirdPersonMode = true;
+        let cameraOffset = new THREE.Vector3(0, 15, 30); // Adjusted for better view
+        let carDirection = new THREE.Vector3(0, 0, -1); // Track car's forward direction
+        let currentRoute = null;
+        let routeMarkers = [];
+
+        const ENVIRONMENT_CONFIG = {
+            city: {
+                buildingCount: 40,
+                treeCount: 60,
+                minBuildingDistance: 20,  // Increased from 12 to 20 for more road clearance
+                maxBuildingDistance: 35   // Reduced from 40 to 35 to keep buildings more compact
+            }
+        };
+
+        // Update the road network to create a complete grid pattern
+        const ROAD_NETWORK = {
+            mainRoads: [
+                // Vertical main roads
+                { start: { x: -80, z: -100 }, end: { x: -80, z: 100 } },  // 16th Main
+                { start: { x: -40, z: -100 }, end: { x: -40, z: 100 } },  // 17th Main
+                { start: { x: 0, z: -100 }, end: { x: 0, z: 100 } },      // 18th Main
+                { start: { x: 40, z: -100 }, end: { x: 40, z: 100 } },    // 19th Main
+                { start: { x: 80, z: -100 }, end: { x: 80, z: 100 } },    // 20th Main
+            ],
+            crossRoads: [
+                // Horizontal cross roads
+                { start: { x: -100, z: -80 }, end: { x: 100, z: -80 } },  // 1st Cross
+                { start: { x: -100, z: -40 }, end: { x: 100, z: -40 } },  // 2nd Cross
+                { start: { x: -100, z: 0 }, end: { x: 100, z: 0 } },      // 3rd Cross
+                { start: { x: -100, z: 40 }, end: { x: 100, z: 40 } },    // 4th Cross
+                { start: { x: -100, z: 80 }, end: { x: 100, z: 80 } }     // 5th Cross
+            ]
+        };
+
+        // Update road configuration for better visibility
+        const ROAD_CONFIG = {
+            main: {
+                width: 12,           // Reduced from 16
+                markings: {
+                    edgeWidth: 0.3,
+                    centerLineWidth: 0.4,
+                    dashLength: 6,
+                    gapLength: 6,
+                    laneOffset: 2.5   // Reduced from 4 to account for smaller vehicles
+                }
+            },
+            cross: {
+                width: 10,           // Reduced from 14
+                markings: {
+                    edgeWidth: 0.25,
+                    centerLineWidth: 0.3,
+                    dashLength: 5,
+                    gapLength: 5,
+                    laneOffset: 2    // Reduced from 3.5 to account for smaller vehicles
+                }
+            }
+        };
+
+        // Traffic system configuration
+        const TRAFFIC_CONFIG = {
+            vehicleCount: 5,           // Number of AI vehicles
+            minSpeed: 8,              // Reduced from 15 for slower movement
+            maxSpeed: 8,              // Set equal to minSpeed for constant speed
+            updateInterval: 0.1,       // How often to update traffic (seconds)
+            spawnDistance: 50,         // Minimum distance from player to spawn
+            despawnDistance: 100,      // Distance at which to remove vehicles
+            intersectionStopDistance: 5, // Distance to stop before intersection
+            initialVehicleCount: 3     // Initial number of vehicles to spawn
+        };
+
+        // Vehicle types configuration - reduced dimensions
+        const VEHICLE_TYPES = {
+            sedan: {
+                width: 3,      // Reduced from 6
+                height: 2.5,   // Reduced from 3.5
+                length: 6,     // Reduced from 12
+                color: 0x2244CC,
+                probability: 0.6
+            },
+            suv: {
+                width: 3.25,   // Reduced from 6.5
+                height: 3,     // Reduced from 4
+                length: 6.5,   // Reduced from 13
+                color: 0x22AA22,
+                probability: 0.3
+            },
+            truck: {
+                width: 3.5,    // Reduced from 7
+                height: 3.5,   // Reduced from 5
+                length: 7.5,   // Reduced from 15
+                color: 0xCC4422,
+                probability: 0.1
+            }
+        };
+
+        // Traffic system variables
+        let trafficVehicles = [];
+        let lastTrafficUpdate = 0;
+
+        // Update marking configuration for wider roads
+        const MARKING_CONFIG = {
+            laneMarking: {
+                dashLength: 4,
+                gapLength: 4,
+                width: 0.2
+            },
+            crosswalk: {
+                stripeCount: 8,       // More stripes for wider roads
+                stripeWidth: 0.5,     // Slightly wider stripes
+                stripeGap: 0.5,
+                setback: 2.5         // Slightly larger setback for wider roads
+            }
+        };
+
+        // Add building types configuration
+        const BUILDING_TYPES = {
+            home: {
+                color: 0xE8D0AC,  // Warm beige
+                minSize: { width: 6, height: 12, depth: 6 },      // Reduced from 8x12x8
+                maxSize: { width: 10, height: 20, depth: 10 },    // Reduced from 12x20x12
+                label: "Home",
+                features: {
+                    roofColor: 0x8B4513,  // Brown roof
+                    windowColor: 0x87CEEB  // Sky blue windows
+                }
+            },
+            hospital: {
+                color: 0xF0F0F0,  // Bright white
+                minSize: { width: 15, height: 30, depth: 15 },    // Reduced from 20x30x20
+                maxSize: { width: 20, height: 40, depth: 20 },    // Reduced from 25x40x25
+                label: "Hospital",
+                features: {
+                    crossColor: 0xFF0000,  // Red cross
+                    stripeColor: 0x0000FF  // Blue stripe
+                }
+            },
+            school: {
+                color: 0xFFF0B0,  // Light yellow
+                minSize: { width: 18, height: 15, depth: 18 },    // Reduced from 25x15x25
+                maxSize: { width: 22, height: 20, depth: 22 },    // Reduced from 30x20x30
+                label: "School",
+                features: {
+                    trimColor: 0x2E8B57,  // School green
+                    flagColor: 0xFF4500  // Orange-red flag
+                }
+            },
+            mall: {
+                color: 0xB4D8E7,  // Light blue
+                minSize: { width: 20, height: 25, depth: 20 },    // Reduced from 30x25x30
+                maxSize: { width: 25, height: 35, depth: 25 },    // Reduced from 40x35x40
+                label: "Shopping Mall",
+                features: {
+                    accentColor: 0xFFD700,  // Gold accents
+                    glassColor: 0x87CEEB  // Sky blue glass
+                }
+            },
+            park: {
+                color: 0x90EE90,  // Light green
+                minSize: { width: 15, height: 1, depth: 15 },     // Reduced from 20x1x20
+                maxSize: { width: 20, height: 1, depth: 20 },     // Reduced from 30x1x30
+                label: "Park",
+                features: {
+                    pathColor: 0xDEB887,  // Path color
+                    decorColor: 0xFF69B4  // Decoration color (flowers)
+                }
+            },
+            office: {
+                color: 0x808080,  // Modern gray
+                minSize: { width: 12, height: 30, depth: 12 },    // Reduced from 15x30x15
+                maxSize: { width: 15, height: 45, depth: 15 },    // Reduced from 20x45x20
+                label: "Office",
+                features: {
+                    windowTint: 0x4682B4,  // Steel blue windows
+                    trimColor: 0xC0C0C0  // Silver trim
+                }
+            }
+        };
+
+        // Add after the global variables
+        let cityMap = {
+            buildings: [],
+            getBuildingsOfType: function(type) {
+                return this.buildings.filter(building => building.type === type);
+            }
+        };
+
+        // Add after cityMap declaration
+        let buildingLocations = {
+            hospital: [],
+            school: [],
+            mall: [],
+            park: [],
+            office: [],
+            home: [],
+            // Store building coordinates with additional info
+            getByType: function(type) {
+                return this[type] || [];
+            },
+            getAllLocations: function() {
+                return [].concat(
+                    this.hospital,
+                    this.school,
+                    this.mall,
+                    this.park,
+                    this.office,
+                    this.home
+                );
+            }
+        };
+
+        function createRoad(start, end, type = 'cross') {
+            const config = ROAD_CONFIG[type];
+            const width = config.width;
+            const length = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.z - start.z, 2));
+            const angle = Math.atan2(end.z - start.z, end.x - start.x);
+
+            // Create road surface with darker asphalt color and raised position
+            const roadGeometry = new THREE.PlaneGeometry(length, width);
+            const roadMaterial = new THREE.MeshPhongMaterial({
+                color: 0x1a1a1a, // Darker asphalt color
+                side: THREE.DoubleSide,
+                shininess: 30 // Add some shininess to make it look more like asphalt
+            });
+            const road = new THREE.Mesh(roadGeometry, roadMaterial);
+            
+            road.rotation.x = -Math.PI / 2;
+            road.rotation.z = -angle;
+            road.position.set(
+                (start.x + end.x) / 2,
+                0.2, // Raise the road 0.2 units above ground
+                (start.z + end.z) / 2
+            );
+            road.receiveShadow = true;
+            scene.add(road);
+
+            // Create markings group - slightly above road surface
+            const markingsGroup = new THREE.Group();
+            markingsGroup.position.set(
+                (start.x + end.x) / 2,
+                0.21, // Markings slightly above road
+                (start.z + end.z) / 2
+            );
+            markingsGroup.rotation.x = -Math.PI / 2;
+            markingsGroup.rotation.z = -angle;
+
+            // Add edge lines
+            const edgeOffset = width / 2 - config.markings.edgeWidth;
+            [-edgeOffset, edgeOffset].forEach(offset => {
+                const edgeLine = new THREE.Mesh(
+                    new THREE.PlaneGeometry(length, config.markings.edgeWidth),
+                    new THREE.MeshPhongMaterial({ 
+                        color: 0xFFFFFF,
+                        emissive: 0x666666 // Add slight emissive for better visibility
+                    })
+                );
+                edgeLine.position.set(0, offset, 0);
+                markingsGroup.add(edgeLine);
+            });
+
+            // Add center line
+            createDashedLine(
+                length, 
+                0, 
+                markingsGroup, 
+                0xFFFF00,
+                config.markings.dashLength,
+                config.markings.gapLength,
+                config.markings.centerLineWidth
+            );
+
+            scene.add(markingsGroup);
+            
+            // Add intersection markings
+            addIntersectionMarkings(start, end, width, angle);
+        }
+
+        function createDashedLine(length, offset, parent, color, dashLength, gapLength, width) {
+            const totalDashes = Math.floor(length / (dashLength + gapLength));
+            
+            for (let i = 0; i < totalDashes; i++) {
+                const dash = new THREE.Mesh(
+                    new THREE.PlaneGeometry(dashLength, width),
+                    new THREE.MeshPhongMaterial({ color: color })
+                );
+                const dashPosition = -length/2 + (dashLength + gapLength) * i + dashLength/2;
+                dash.position.set(dashPosition, offset, 0);
+                parent.add(dash);
+            }
+        }
+
+        function addIntersectionMarkings(start, end, width, angle) {
+            // Check intersections with all roads
+            const allRoads = [...ROAD_NETWORK.mainRoads, ...ROAD_NETWORK.crossRoads];
+            
+            allRoads.forEach(otherRoad => {
+                const intersection = findIntersection(
+                    start.x, start.z,
+                    end.x, end.z,
+                    otherRoad.start.x, otherRoad.start.z,
+                    otherRoad.end.x, otherRoad.end.z
+                );
+
+                if (intersection) {
+                    // Add crosswalks on both sides
+                    addCrosswalk(intersection, width, angle);
+                    addCrosswalk(intersection, width, angle + Math.PI/2);
+                }
+            });
+        }
+
+        function addCrosswalk(intersection, width, angle) {
+            const { stripeCount, stripeWidth, stripeGap, setback } = MARKING_CONFIG.crosswalk;
+            const crosswalkGroup = new THREE.Group();
+            
+            for (let i = 0; i < stripeCount; i++) {
+                const stripe = new THREE.Mesh(
+                    new THREE.PlaneGeometry(stripeWidth, width - 1),
+                    new THREE.MeshPhongMaterial({ 
+                        color: 0xFFFFFF,
+                        emissive: 0x666666 // Add slight emissive for better visibility
+                    })
+                );
+                stripe.position.set(
+                    i * (stripeWidth + stripeGap) - (stripeCount * (stripeWidth + stripeGap))/2,
+                    0,
+                    0
+                );
+                crosswalkGroup.add(stripe);
+            }
+
+            crosswalkGroup.position.set(
+                intersection.x + Math.cos(angle) * setback,
+                0.21, // Match the height of road markings
+                intersection.z + Math.sin(angle) * setback
+            );
+            crosswalkGroup.rotation.x = -Math.PI / 2;
+            crosswalkGroup.rotation.z = -angle;
+            
+            scene.add(crosswalkGroup);
+        }
+
+        // Helper function to find intersection point of two line segments
+        function findIntersection(x1, y1, x2, y2, x3, y3, x4, y4) {
+            const denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+            if (denominator === 0) return null;
+
+            const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denominator;
+            const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denominator;
+
+            if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+                return {
+                    x: x1 + t * (x2 - x1),
+                    z: y1 + t * (y2 - y1)
+                };
+            }
+            return null;
+        }
+
+        // Update createEnvironment function
+        function createEnvironment() {
+            console.log("Creating environment...");
+            
+            // Create main road
+            ROAD_NETWORK.mainRoads.forEach(road => {
+                createRoad(road.start, road.end, 'main');
+            });
+
+            // Create cross roads
+            ROAD_NETWORK.crossRoads.forEach(road => {
+                createRoad(road.start, road.end, 'cross');
+            });
+            
+            // Adjust building placement
+            ENVIRONMENT_CONFIG.city.buildingCount = 30;  // Reduce building count
+            ENVIRONMENT_CONFIG.city.minBuildingDistance = 15;  // Adjust building distance from roads
+            createBuildings();
+            
+            // Adjust tree placement
+            ENVIRONMENT_CONFIG.city.treeCount = 50;  // Reduce tree count
+            createTrees();
+            
+            createSky();
+            createMiniMap();
+        }
+
+        // Modify the building placement to respect all roads
+        function isValidBuildingPosition(x, z, width, depth, isTree = false) {
+            // Check distance from all roads
+            const ROAD_CLEARANCE = isTree ? 8 : 2; // Larger clearance for trees to keep them well away from roads
+            
+            // Check main roads
+            for (const road of ROAD_NETWORK.mainRoads) {
+                const roadWidth = ROAD_CONFIG.main.width / 2 + ROAD_CLEARANCE;
+                // Calculate building/tree bounds
+                const buildingLeft = x - width / 2;
+                const buildingRight = x + width / 2;
+                const buildingTop = z - depth / 2;
+                const buildingBottom = z + depth / 2;
+                
+                // Check if building/tree overlaps with road
+                if (Math.abs(x - road.start.x) < (roadWidth + width / 2)) {
+                    if (z >= Math.min(road.start.z, road.end.z) - depth / 2 &&
+                        z <= Math.max(road.start.z, road.end.z) + depth / 2) {
+                        return false;
+                    }
+                }
+            }
+            
+            // Check cross roads
+            for (const road of ROAD_NETWORK.crossRoads) {
+                const roadWidth = ROAD_CONFIG.cross.width / 2 + ROAD_CLEARANCE;
+                if (Math.abs(z - road.start.z) < (roadWidth + depth / 2)) {
+                    if (x >= Math.min(road.start.x, road.end.x) - width / 2 &&
+                        x <= Math.max(road.start.x, road.end.x) + width / 2) {
+                        return false;
+                    }
+                }
+            }
+            
+            // For trees, we don't need to check building distances
+            if (isTree) {
+                return true;
+            }
+            
+            // Check minimum distance from other buildings
+            for (const building of cityMap.buildings) {
+                const dx = Math.abs(x - building.position.x);
+                const dz = Math.abs(z - building.position.z);
+                const minDistance = ENVIRONMENT_CONFIG.city.minBuildingDistance;
+                if (dx < minDistance && dz < minDistance) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Helper function to calculate distance from point to line segment
+        function distanceToLineSegment(px, pz, x1, z1, x2, z2) {
+            const A = px - x1;
+            const B = pz - z1;
+            const C = x2 - x1;
+            const D = z2 - z1;
+
+            const dot = A * C + B * D;
+            const len_sq = C * C + D * D;
+            let param = -1;
+
+            if (len_sq !== 0) {
+                param = dot / len_sq;
+            }
+
+            let xx, zz;
+
+            if (param < 0) {
+                xx = x1;
+                zz = z1;
+            } else if (param > 1) {
+                xx = x2;
+                zz = z2;
+            } else {
+                xx = x1 + param * C;
+                zz = z1 + param * D;
+            }
+
+            const dx = px - xx;
+            const dz = pz - zz;
+            return Math.sqrt(dx * dx + dz * dz);
+        }
+
+        // Function to create text sprite for building labels
+        function createTextSprite(text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+
+            context.font = '24px Arial';
+            context.fillStyle = 'white';
+            context.textAlign = 'center';
+            context.fillText(text, 128, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(10, 2.5, 1);
+
+            return sprite;
+        }
+
+        // Modify the createBuildings function to store building information
+        function createBuildings() {
+            // Clear existing buildings and locations
+            cityMap.buildings = [];
+            buildingLocations.hospital = [];
+            buildingLocations.school = [];
+            buildingLocations.mall = [];
+            buildingLocations.park = [];
+            buildingLocations.office = [];
+            buildingLocations.home = [];
+            
+            const gridBlocks = [];
+            const spacing = 40;
+            
+            for (let x = -80; x <= 80; x += spacing) {
+                for (let z = -80; z <= 80; z += spacing) {
+                    gridBlocks.push({
+                        center: { x: x + spacing/2, z: z + spacing/2 },
+                        type: null
+                    });
+                }
+            }
+
+            const assignments = [
+                { type: 'hospital', count: 2 },
+                { type: 'school', count: 3 },
+                { type: 'mall', count: 2 },
+                { type: 'park', count: 3 },
+                { type: 'office', count: 4 },
+                { type: 'home', count: 10 }
+            ];
+
+            assignments.forEach(({ type, count }) => {
+                for (let i = 0; i < count; i++) {
+                    const availableBlocks = gridBlocks.filter(block => !block.type);
+                    if (availableBlocks.length > 0) {
+                        const randomBlock = availableBlocks[Math.floor(Math.random() * availableBlocks.length)];
+                        randomBlock.type = type;
+                    }
+                }
+            });
+
+            gridBlocks.forEach(block => {
+                if (!block.type) return;
+
+                const buildingType = BUILDING_TYPES[block.type];
+                const width = Math.random() * (buildingType.maxSize.width - buildingType.minSize.width) + buildingType.minSize.width;
+                const height = Math.random() * (buildingType.maxSize.height - buildingType.minSize.height) + buildingType.minSize.height;
+                const depth = Math.random() * (buildingType.maxSize.depth - buildingType.minSize.depth) + buildingType.minSize.depth;
+
+                const xOffset = Math.random() * 6 - 3;
+                const zOffset = Math.random() * 6 - 3;
+                const position = {
+                    x: block.center.x + xOffset,
+                    y: height/2,
+                    z: block.center.z + zOffset
+                };
+
+                // Store building location with additional info
+                buildingLocations[block.type].push({
+                    position: { ...position },
+                    dimensions: { width, height, depth },
+                    center: { ...block.center },
+                    label: buildingType.label,
+                    nearestIntersection: findNearestIntersection(new THREE.Vector3(position.x, 0, position.z))
+                });
+
+                // Create building group
+                const buildingGroup = new THREE.Group();
+
+                // Main building body
+                const buildingGeometry = new THREE.BoxGeometry(width, height, depth);
+                const buildingMaterial = new THREE.MeshPhongMaterial({
+                    color: buildingType.color,
+                    shininess: 30
+                });
+                const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+                buildingGroup.add(building);
+
+                // Add type-specific features
+                switch(block.type) {
+                    case 'home':
+                        // Add pitched roof
+                        const roofGeometry = new THREE.ConeGeometry(width * 0.7, height * 0.3, 4);
+                        const roofMaterial = new THREE.MeshPhongMaterial({ color: buildingType.features.roofColor });
+                        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+                        roof.position.y = height * 0.6;
+                        roof.rotation.y = Math.PI / 4;
+                        buildingGroup.add(roof);
+
+                        // Add windows
+                        for (let i = 0; i < 2; i++) {
+                            for (let j = 0; j < 2; j++) {
+                                const windowGeometry = new THREE.PlaneGeometry(width * 0.2, height * 0.2);
+                                const windowMaterial = new THREE.MeshPhongMaterial({ 
+                                    color: buildingType.features.windowColor,
+                                    emissive: 0x333333
+                                });
+                                const windowPane = new THREE.Mesh(windowGeometry, windowMaterial);
+                                windowPane.position.set(
+                                    width * 0.3 * (i * 2 - 1),
+                                    height * 0.1 * (j * 2),
+                                    depth * 0.501
+                                );
+                                buildingGroup.add(windowPane);
+                            }
+                        }
+                        break;
+
+                    case 'hospital':
+                        // Add red cross
+                        const crossGeometry = new THREE.BoxGeometry(width * 0.3, height * 0.3, depth * 0.1);
+                        const crossMaterial = new THREE.MeshPhongMaterial({ 
+                            color: buildingType.features.crossColor,
+                            emissive: buildingType.features.crossColor,
+                            emissiveIntensity: 0.5
+                        });
+                        const cross = new THREE.Mesh(crossGeometry, crossMaterial);
+                        cross.position.set(0, height * 0.3, depth * 0.51);
+                        buildingGroup.add(cross);
+
+                        // Add horizontal stripe
+                        const stripeGeometry = new THREE.BoxGeometry(width, height * 0.1, depth * 0.1);
+                        const stripeMaterial = new THREE.MeshPhongMaterial({ color: buildingType.features.stripeColor });
+                        const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+                        stripe.position.y = -height * 0.2;
+                        buildingGroup.add(stripe);
+                        break;
+
+                    case 'school':
+                        // Add green trim
+                        const trimGeometry = new THREE.BoxGeometry(width * 1.1, height * 0.1, depth * 1.1);
+                        const trimMaterial = new THREE.MeshPhongMaterial({ color: buildingType.features.trimColor });
+                        const trim = new THREE.Mesh(trimGeometry, trimMaterial);
+                        trim.position.y = -height * 0.45;
+                        buildingGroup.add(trim);
+
+                        // Add flag
+                        const poleGeometry = new THREE.CylinderGeometry(0.2, 0.2, height * 0.3);
+                        const poleMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 });
+                        const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+                        pole.position.set(width * 0.45, height * 0.5, depth * 0.45);
+                        buildingGroup.add(pole);
+
+                        const flagGeometry = new THREE.PlaneGeometry(3, 2);
+                        const flagMaterial = new THREE.MeshPhongMaterial({ 
+                            color: buildingType.features.flagColor,
+                            side: THREE.DoubleSide
+                        });
+                        const flag = new THREE.Mesh(flagGeometry, flagMaterial);
+                        flag.position.set(width * 0.45 + 1.5, height * 0.5, depth * 0.45);
+                        buildingGroup.add(flag);
+                        break;
+
+                    case 'mall':
+                        // Add glass front
+                        const glassGeometry = new THREE.PlaneGeometry(width * 0.8, height * 0.8);
+                        const glassMaterial = new THREE.MeshPhongMaterial({ 
+                            color: buildingType.features.glassColor,
+                            transparent: true,
+                            opacity: 0.5,
+                            shininess: 100
+                        });
+                        const glass = new THREE.Mesh(glassGeometry, glassMaterial);
+                        glass.position.z = depth * 0.501;
+                        buildingGroup.add(glass);
+
+                        // Add golden accents
+                        const accentGeometry = new THREE.BoxGeometry(width, height * 0.05, depth);
+                        const accentMaterial = new THREE.MeshPhongMaterial({ 
+                            color: buildingType.features.accentColor,
+                            metalness: 0.8,
+                            roughness: 0.2
+                        });
+                        const accent = new THREE.Mesh(accentGeometry, accentMaterial);
+                        accent.position.y = height * 0.4;
+                        buildingGroup.add(accent);
+                        break;
+
+                    case 'office':
+                        // Add reflective windows
+                        for (let i = 0; i < 5; i++) {
+                            for (let j = 0; j < 3; j++) {
+                                const windowGeometry = new THREE.PlaneGeometry(width * 0.15, height * 0.15);
+                                const windowMaterial = new THREE.MeshPhongMaterial({ 
+                                    color: buildingType.features.windowTint,
+                                    shininess: 100,
+                                    emissive: 0x222222
+                                });
+                                const windowPane = new THREE.Mesh(windowGeometry, windowMaterial);
+                                windowPane.position.set(
+                                    width * 0.3 * (j - 1),
+                                    height * 0.3 * (i - 2),
+                                    depth * 0.501
+                                );
+                                buildingGroup.add(windowPane);
+                            }
+                        }
+
+                        // Add silver trim
+                        const officeTrimGeometry = new THREE.BoxGeometry(width * 1.1, height * 0.05, depth * 1.1);
+                        const officeTrimMaterial = new THREE.MeshPhongMaterial({ 
+                            color: buildingType.features.trimColor,
+                            metalness: 0.8
+                        });
+                        const officeTrim = new THREE.Mesh(officeTrimGeometry, officeTrimMaterial);
+                        officeTrim.position.y = height * 0.48;
+                        buildingGroup.add(officeTrim);
+                        break;
+
+                    case 'park':
+                        // Add decorative paths
+                        const pathGeometry = new THREE.PlaneGeometry(width * 0.8, depth * 0.1);
+                        const pathMaterial = new THREE.MeshPhongMaterial({ 
+                            color: buildingType.features.pathColor,
+                            side: THREE.DoubleSide
+                        });
+                        const path1 = new THREE.Mesh(pathGeometry, pathMaterial);
+                        path1.rotation.x = -Math.PI / 2;
+                        path1.position.y = 0.1;
+                        buildingGroup.add(path1);
+
+                        const path2 = new THREE.Mesh(pathGeometry, pathMaterial);
+                        path2.rotation.x = -Math.PI / 2;
+                        path2.rotation.z = Math.PI / 2;
+                        path2.position.y = 0.1;
+                        buildingGroup.add(path2);
+
+                        // Add decorative flowers
+                        for (let i = 0; i < 8; i++) {
+                            const flowerGeometry = new THREE.SphereGeometry(0.5);
+                            const flowerMaterial = new THREE.MeshPhongMaterial({ 
+                                color: buildingType.features.decorColor,
+                                emissive: buildingType.features.decorColor,
+                                emissiveIntensity: 0.2
+                            });
+                            const flower = new THREE.Mesh(flowerGeometry, flowerMaterial);
+                            const angle = (i / 8) * Math.PI * 2;
+                            flower.position.set(
+                                Math.cos(angle) * width * 0.3,
+                                0.5,
+                                Math.sin(angle) * depth * 0.3
+                            );
+                            buildingGroup.add(flower);
+                        }
+                        break;
+                }
+
+                // Position the building group
+                buildingGroup.position.set(position.x, position.y, position.z);
+                buildingGroup.castShadow = true;
+                buildingGroup.receiveShadow = true;
+                scene.add(buildingGroup);
+
+                // Add label
+                const label = createTextSprite(buildingType.label);
+                label.position.set(0, height + 2, 0);
+                buildingGroup.add(label);
+
+                // Store building information in cityMap
+                cityMap.buildings.push({
+                    type: block.type,
+                    position: position,
+                    dimensions: { width, height, depth },
+                    mesh: buildingGroup,
+                    mainMesh: building,  // Store reference to the main building mesh
+                    label: buildingType.label
+                });
+
+                // If it's a park, add trees and benches
+                if (block.type === 'park') {
+                    createParkDetails(block.center.x, block.center.z, width, depth);
+                }
+            });
+        }
+
+        // Function to add details to parks
+        function createParkDetails(centerX, centerZ, width, depth) {
+            // Add trees
+            const treeCount = Math.floor(Math.random() * 8) + 4;
+            for (let i = 0; i < treeCount; i++) {
+                const x = centerX + (Math.random() * width * 0.8 - width * 0.4);
+                const z = centerZ + (Math.random() * depth * 0.8 - depth * 0.4);
+                
+                const tree = createTree();
+                tree.position.set(x, 0, z);
+                scene.add(tree);
+            }
+
+            // Add benches
+            const benchCount = Math.floor(Math.random() * 4) + 2;
+            for (let i = 0; i < benchCount; i++) {
+                const bench = createBench();
+                const x = centerX + (Math.random() * width * 0.7 - width * 0.35);
+                const z = centerZ + (Math.random() * depth * 0.7 - depth * 0.35);
+                bench.position.set(x, 0.5, z);
+                bench.rotation.y = Math.random() * Math.PI * 2;
+                scene.add(bench);
+            }
+        }
+
+        // Function to create a bench
+        function createBench() {
+            const benchGroup = new THREE.Group();
+            
+            // Bench seat
+            const seatGeometry = new THREE.BoxGeometry(2, 0.1, 0.6);
+            const seatMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+            const seat = new THREE.Mesh(seatGeometry, seatMaterial);
+            seat.position.y = 0.5;
+            benchGroup.add(seat);
+
+            // Bench legs
+            [-0.8, 0.8].forEach(x => {
+                const legGeometry = new THREE.BoxGeometry(0.1, 1, 0.6);
+                const leg = new THREE.Mesh(legGeometry, seatMaterial);
+                leg.position.set(x, 0, 0);
+                benchGroup.add(leg);
+            });
+
+            return benchGroup;
+        }
+
+        // Function to create a tree
+        function createTree() {
+            const treeGroup = new THREE.Group();
+
+            // Tree trunk
+            const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.3, 2, 8);
+            const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x4d2926 });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            treeGroup.add(trunk);
+
+            // Tree top
+            const topGeometry = new THREE.ConeGeometry(2, 4, 8);
+            const topMaterial = new THREE.MeshPhongMaterial({ color: 0x0d5c0d });
+            const top = new THREE.Mesh(topGeometry, topMaterial);
+            top.position.y = 3;
+            treeGroup.add(top);
+
+            return treeGroup;
+        }
+
+        function createTrees() {
+            for (let i = 0; i < ENVIRONMENT_CONFIG.city.treeCount; i++) {
+                // Tree dimensions (use these for position validation)
+                const treeWidth = 4;  // Width of tree including foliage
+                const treeDepth = 4;  // Depth of tree including foliage
+
+                // Find valid position
+                let validPosition = false;
+                let x, z;
+                let attempts = 0;
+                const maxAttempts = 50;
+
+                while (!validPosition && attempts < maxAttempts) {
+                    x = Math.random() * 200 - 100;
+                    z = Math.random() * 200 - 100;
+                    validPosition = isValidBuildingPosition(x, z, treeWidth, treeDepth, true);
+                    attempts++;
+                }
+
+                if (validPosition) {
+                    // Tree trunk
+                    const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.3, 2, 8);
+                    const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x4d2926 });
+                    const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+
+                    // Tree top
+                    const topGeometry = new THREE.ConeGeometry(2, 4, 8);
+                    const topMaterial = new THREE.MeshPhongMaterial({ color: 0x0d5c0d });
+                    const top = new THREE.Mesh(topGeometry, topMaterial);
+                    top.position.y = 3;
+
+                    // Combine trunk and top
+                    const tree = new THREE.Group();
+                    tree.add(trunk);
+                    tree.add(top);
+                    tree.position.set(x, 0, z);
+                    tree.castShadow = true;
+                    tree.receiveShadow = true;
+                    scene.add(tree);
+                }
+            }
+        }
+
+        function createSky() {
+            // Sky dome
+            const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+            const skyMaterial = new THREE.MeshBasicMaterial({
+                color: 0x87CEEB,
+                side: THREE.BackSide
+            });
+            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+            scene.add(sky);
+
+            // Ground plane
+            const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+            const groundMaterial = new THREE.MeshPhongMaterial({
+                color: 0x3c8f3c,
+                side: THREE.DoubleSide
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = 0;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Create main directional light
+            mainLight = new THREE.DirectionalLight(0xffffff, 1);
+            mainLight.position.set(100, 100, 50);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+            scene.add(mainLight);
+
+            // Create ambient light
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambientLight);
+        }
+
+        // Initialize scene
+        function init() {
+            console.log("Initializing scene...");
+
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(-40, 20, -10);
+            camera.lookAt(0, 0, 0);
+
+            // Create the main car model
+            vehicle = createCarModel(false);
+            vehicle.position.set(-40, 0, -40); // Initial position
+            scene.add(vehicle);
+
+            // Create environment
+            createEnvironment();
+
+            // Add orbit controls with limited range
+            orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.screenSpacePanning = false;
+            orbitControls.minDistance = 10;
+            orbitControls.maxDistance = 50;
+            orbitControls.maxPolarAngle = Math.PI / 2;
+            orbitControls.target.set(0, 0, 0);
+
+            // Initialize traffic system
+            console.log("Initializing traffic system...");
+            lastTrafficUpdate = performance.now();
+            console.log("Spawning", TRAFFIC_CONFIG.initialVehicleCount, "vehicles");
+            for (let i = 0; i < TRAFFIC_CONFIG.initialVehicleCount; i++) {
+                spawnTrafficVehicle();
+            }
+
+            // Initialize info div and event listeners
+            infoDiv = document.getElementById('buildingInfo');
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+
+            // Initialize first-person controls
+            firstPersonControls = new THREE.PointerLockControls(camera, renderer.domElement);
+            currentControls = orbitControls;
+
+            // Setup movement controls - modify to use car-like controls
+            const onKeyDown = function(event) {
+                switch (event.code) {
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        moveForward = true;
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        moveBackward = true;
+                        break;
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        steerLeft = true;  // Steering instead of strafing
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        steerRight = true; // Steering instead of strafing
+                        break;
+                }
+            };
+
+            const onKeyUp = function(event) {
+                switch (event.code) {
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        moveForward = false;
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        moveBackward = false;
+                        break;
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        steerLeft = false;  // Steering instead of strafing
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        steerRight = false; // Steering instead of strafing
+                        break;
+                }
+            };
+
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            // Add event listener for drive mode toggle button
+            const driveModeToggleBtn = document.getElementById('driveModeToggle');
+            driveModeToggleBtn.addEventListener('click', toggleDriveMode);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            TWEEN.update();
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+
+            // Update traffic less frequently for performance
+            if (time - lastTrafficUpdate > TRAFFIC_CONFIG.updateInterval * 1000) {
+                updateTrafficVehicles(TRAFFIC_CONFIG.updateInterval);
+                lastTrafficUpdate = time;
+            }
+
+            if (thirdPersonMode) {
+                if (isAutoDriving) {
+                    updateAutoDrive(delta);
+                } else {
+                    // Manual driving mode with improved physics
+                    // Apply friction - higher value for more responsive deceleration
+                    velocity.x -= velocity.x * 3.0 * delta; // Reduced friction for smoother movement
+                    velocity.z -= velocity.z * 3.0 * delta;
+
+                    // Setup car-like controls
+                    // Forward/backward movement in the vehicle's current direction
+                    const forwardVector = new THREE.Vector3(0, 0, -1);
+                    forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), vehicle.rotation.y);
+                    
+                    // Calculate current speed for use in all physics calculations
+                    const currentSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+                    
+                    // More realistic acceleration and braking with different forces
+                    const forwardAccel = 200.0 * delta * moveSpeed;    // Increased acceleration
+                    const reverseAccel = 150.0 * delta * moveSpeed;    // Increased reverse acceleration
+                    const steeringSpeed = 2.0 * delta;                 // Increased turning speed
+                    
+                    // Add initial impulse when starting from near-stop to make car feel more responsive
+                    const minStartSpeed = 20; // Minimum speed to apply when starting from stop
+                    
+                    // Apply forward/backward movement in the vehicle's direction
+                    if (moveForward) {
+                        // Apply initial impulse when nearly stopped for more responsive feel
+                        if (currentSpeed < 5) {
+                            velocity.x = forwardVector.x * minStartSpeed;
+                            velocity.z = forwardVector.z * minStartSpeed;
+                        } else {
+                            velocity.x += forwardVector.x * forwardAccel;
+                            velocity.z += forwardVector.z * forwardAccel;
+                        }
+                    } else if (moveBackward) {
+                        // Similar impulse for reverse
+                        if (currentSpeed < 5) {
+                            velocity.x = -forwardVector.x * minStartSpeed * 0.7; // Slightly slower for reverse
+                            velocity.z = -forwardVector.z * minStartSpeed * 0.7;
+                        } else {
+                            velocity.x -= forwardVector.x * reverseAccel;
+                            velocity.z -= forwardVector.z * reverseAccel;
+                        }
+                    }
+                    
+                    // Different steering behavior based on speed
+                    if (currentSpeed > 1) { 
+                        // Normal steering when moving
+                        if (steerLeft) {
+                            vehicle.rotation.y += steeringSpeed;
+                        }
+                        if (steerRight) {
+                            vehicle.rotation.y -= steeringSpeed;
+                        }
+                    } else {
+                        // Enhanced steering when nearly stopped - allows for turning in place
+                        const stationaryTurnSpeed = steeringSpeed * 0.5; // Slower turning when stationary
+                        
+                        if (steerLeft) {
+                            vehicle.rotation.y += stationaryTurnSpeed;
+                            // Add a tiny bit of movement in the new direction
+                            if (moveForward) {
+                                const turnDir = new THREE.Vector3(0, 0, -1);
+                                turnDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), vehicle.rotation.y);
+                                velocity.x = turnDir.x * 5;
+                                velocity.z = turnDir.z * 5;
+                            }
+                        }
+                        if (steerRight) {
+                            vehicle.rotation.y -= stationaryTurnSpeed;
+                            // Add a tiny bit of movement in the new direction
+                            if (moveForward) {
+                                const turnDir = new THREE.Vector3(0, 0, -1);
+                                turnDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), vehicle.rotation.y);
+                                velocity.x = turnDir.x * 5;
+                                velocity.z = turnDir.z * 5;
+                            }
+                        }
+                    }
+                    
+                    // Apply speed cap for max 10 km/h
+                    const maxSpeed = 100; // This gives us ~10 km/h when scaled
+                    if (currentSpeed > maxSpeed) {
+                        velocity.x = (velocity.x / currentSpeed) * maxSpeed;
+                        velocity.z = (velocity.z / currentSpeed) * maxSpeed;
+                    }
+                    
+                    // Update speedometer for manual driving - scale properly to show km/h
+                    const speedKmh = currentSpeed * 0.1; // Scale for display
+                    document.getElementById('speedometer').style.display = 'block';
+                    document.getElementById('speedometer').innerText = `Speed: ${Math.round(speedKmh)} km/h`;
+
+                    // Calculate next position using velocity
+                    const nextPosX = vehicle.position.x + velocity.x * delta;
+                    const nextPosZ = vehicle.position.z + velocity.z * delta;
+
+                    // Find nearest road for lane following
+                    const nearestRoad = findNearestRoad(vehicle.position);
+                    if (nearestRoad && (moveForward || moveBackward || steerLeft || steerRight)) {
+                        // Determine if it's a main road or cross road
+                        const isMainRoad = ROAD_NETWORK.mainRoads.includes(nearestRoad);
+                        const roadConfig = isMainRoad ? ROAD_CONFIG.main : ROAD_CONFIG.cross;
+
+                        // Calculate road direction vector
+                        const roadDir = new THREE.Vector2(
+                            nearestRoad.end.x - nearestRoad.start.x,
+                            nearestRoad.end.z - nearestRoad.start.z
+                        ).normalize();
+
+                        // Calculate vehicle's forward direction vector based on rotation
+                        const vehicleForward = new THREE.Vector3(0, 0, -1);
+                        vehicleForward.applyAxisAngle(new THREE.Vector3(0, 1, 0), vehicle.rotation.y);
+                        const vehicleDir = new THREE.Vector2(vehicleForward.x, vehicleForward.z).normalize();
+
+                        // Calculate road normal (perpendicular to road direction)
+                        const roadNormal = new THREE.Vector2(-roadDir.y, roadDir.x);
+
+                        // Determine which side of the road to drive on based on vehicle direction
+                        const dotProduct = roadDir.dot(vehicleDir);
+                        const sideMultiplier = dotProduct > 0 ? -1 : 1;
+
+                        // Road orientation calculation for alignment assistance
+                        const roadAngle = Math.atan2(roadDir.y, roadDir.x);
+                        
+                        // Provide subtle road alignment assistance (only if not actively steering)
+                        if (currentSpeed > 5 && !steerLeft && !steerRight) {
+                            // Calculate target rotation based on road direction
+                            let targetRoadRotation;
+                            if (dotProduct > 0) {
+                                // Going in the positive road direction
+                                targetRoadRotation = roadAngle + Math.PI; // Flip 180 degrees
+                            } else {
+                                // Going in the negative road direction
+                                targetRoadRotation = roadAngle;
+                            }
+                            
+                            // Apply very gentle rotation towards road alignment
+                            const roadAlignmentStrength = 0.1 * delta; // Reduced from 0.2 for more subtle assistance
+                            let currentRotation = vehicle.rotation.y;
+                            
+                            // Calculate shortest rotation path
+                            let rotationDiff = targetRoadRotation - currentRotation;
+                            while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
+                            while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+                            
+                            // Apply a small amount of auto-alignment (very subtle)
+                            vehicle.rotation.y += rotationDiff * roadAlignmentStrength;
+                        }
+
+                        const idealOffset = roadNormal.clone().multiplyScalar(roadConfig.markings.laneOffset * sideMultiplier);
+
+                        // Project current position onto road
+                        const roadStart = new THREE.Vector2(nearestRoad.start.x, nearestRoad.start.z);
+                        const pos2D = new THREE.Vector2(nextPosX, nextPosZ); // Use next position for projection
+                        const projectedPos = projectPointOntoLine(pos2D, roadStart, roadDir);
+                        const targetPos = projectedPos.add(idealOffset);
+
+                        // Smoothly move towards ideal lane position with very reduced lane following strength
+                        const currentPos2D = new THREE.Vector2(nextPosX, nextPosZ);
+                        const lerpFactor = 0.03; // Further reduced for much less lane assistance
+                        const newPos = currentPos2D.lerp(targetPos, lerpFactor);
+
+                        // Apply movement with lane correction but maintain player input priority
+                        vehicle.position.x = newPos.x;
+                        vehicle.position.z = newPos.y;
+                    } else {
+                        // Regular movement when not on a road - directly apply velocity
+                        vehicle.position.x = nextPosX;
+                        vehicle.position.z = nextPosZ;
+                    }
+                }
+
+                // Camera follow logic
+                const rotatedOffset = new THREE.Vector3(0, 15, 30);
+                const angle = vehicle.rotation.y;
+                rotatedOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+
+                const targetCameraPos = new THREE.Vector3(
+                    vehicle.position.x + rotatedOffset.x,
+                    vehicle.position.y + rotatedOffset.y,
+                    vehicle.position.z + rotatedOffset.z
+                );
+                
+                camera.position.lerp(targetCameraPos, 0.1);
+                camera.lookAt(vehicle.position);
+
+                if (orbitControls) {
+                    orbitControls.target.copy(vehicle.position);
+                }
+            }
+
+            if (currentControls === orbitControls) {
+                orbitControls.update();
+            }
+
+            renderer.render(scene, camera);
+            if (miniMapRenderer && miniMapScene && miniMapCamera) {
+                miniMapRenderer.render(miniMapScene, miniMapCamera);
+            }
+
+            prevTime = time;
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start the simulation
+        console.log("Starting simulation...");
+        init();
+        animate();
+        console.log("Animation loop started");
+
+        // Add before init function
+        function onMouseMove(event) {
+            const mouse = new THREE.Vector2();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            // Find intersected buildings
+            const intersects = raycaster.intersectObjects(cityMap.buildings.map(b => b.mesh));
+
+            // Reset previous highlight if exists
+            if (highlightedBuilding) {
+                highlightedBuilding.material.color.setHex(originalBuildingColor);
+                highlightedBuilding = null;
+                originalBuildingColor = null;
+                infoDiv.style.display = 'none';
+            }
+
+            // Highlight new building if found
+            if (intersects.length > 0) {
+                const intersectedMesh = intersects[0].object;
+                const buildingInfo = cityMap.buildings.find(b => b.mesh === intersectedMesh);
+                
+                if (buildingInfo) {
+                    highlightedBuilding = intersectedMesh;
+                    originalBuildingColor = BUILDING_TYPES[buildingInfo.type].color;
+                    highlightedBuilding.material.color.setHex(0xffff00); // Yellow highlight
+
+                    // Update info display
+                    infoDiv.innerHTML = `
+                        Building Information:<br>
+                        Type: ${buildingInfo.type}<br>
+                        Size: ${buildingInfo.dimensions.width.toFixed(1)}x${buildingInfo.dimensions.height.toFixed(1)}x${buildingInfo.dimensions.depth.toFixed(1)}<br>
+                        Position: (${buildingInfo.position.x.toFixed(1)}, ${buildingInfo.position.z.toFixed(1)})
+                    `;
+                    infoDiv.style.display = 'block';
+                }
+            }
+        }
+
+        // Add before the init function
+        function highlightBuildingType(type) {
+            // Clear previous highlights and routes
+            clearHighlights();
+            clearRoute();
+            stopAutoDrive();
+
+            // Find all buildings of the specified type
+            const buildings = cityMap.getBuildingsOfType(type);
+            
+            buildings.forEach(building => {
+                originalColors.set(building.mainMesh, building.mainMesh.material.color.getHex());
+                building.mainMesh.material.color.setHex(0xffff00);
+                highlightedBuildings.push(building.mainMesh);
+            });
+
+            // Update building count
+            document.getElementById('buildingCount').innerHTML = `Found ${buildings.length} ${type}(s)`;
+
+            if (buildings.length > 1) {
+                // Show building selector
+                const selector = document.getElementById('buildingSelector');
+                selector.innerHTML = `
+                    <div style="margin-bottom: 15px;">Select a ${type} to navigate to:</div>
+                    ${buildings.map((building, index) => `
+                        <button class="buildingOption" onclick="selectBuilding(${index}, '${type}')">
+                            ${type.charAt(0).toUpperCase() + type.slice(1)} ${index + 1}<br>
+                            Distance: ${vehicle.position.distanceTo(
+                                new THREE.Vector3(building.position.x, 0, building.position.z)
+                            ).toFixed(0)} units
+                        </button>
+                    `).join('')}
+                    <button class="buildingOption" style="background: rgba(255,0,0,0.2)" 
+                            onclick="document.getElementById('buildingSelector').style.display='none'">
+                        Cancel
+                    </button>
+                `;
+                selector.style.display = 'block';
+            } else if (buildings.length === 1) {
+                // If only one building, navigate directly to it
+                createRouteTo(buildings[0]);
+                startAutoDrive();
+            }
+        }
+
+        function selectBuilding(index, type) {
+            const buildings = cityMap.getBuildingsOfType(type);
+            if (buildings[index]) {
+                createRouteTo(buildings[index]);
+                startAutoDrive();
+            }
+            document.getElementById('buildingSelector').style.display = 'none';
+        }
+
+        function startAutoDrive() {
+            if (currentRoute && routeMarkers.length > 0) {
+                isAutoDriving = true;
+                currentRouteIndex = 0;
+                thirdPersonMode = true; // Switch to third-person mode for better visibility
+                
+                // Update the toggle button
+                const toggleBtn = document.getElementById('driveModeToggle');
+                toggleBtn.textContent = "Switch to Manual Driving";
+                toggleBtn.classList.remove("manual");
+            }
+        }
+
+        function stopAutoDrive() {
+            isAutoDriving = false;
+            currentRouteIndex = 0;
+            document.getElementById('speedometer').style.display = 'none';
+            document.getElementById('navInfo').style.display = 'none';
+            
+            // Update the toggle button
+            const toggleBtn = document.getElementById('driveModeToggle');
+            toggleBtn.textContent = "Switch to Autonomous Driving";
+            toggleBtn.classList.add("manual");
+        }
+
+        function updateAutoDrive(delta) {
+            if (!isAutoDriving || !currentRoute || currentRouteIndex >= routeMarkers.length) {
+                stopAutoDrive();
+                return;
+            }
+
+            // Get current target marker
+            const targetMarker = routeMarkers[currentRouteIndex];
+            const targetPos = new THREE.Vector3(targetMarker.position.x, 0, targetMarker.position.z);
+            const vehiclePos = new THREE.Vector3(vehicle.position.x, 0, vehicle.position.z);
+
+            // Calculate distance to target
+            const distanceToTarget = vehiclePos.distanceTo(targetPos);
+
+            // Check if we've reached the current marker
+            if (distanceToTarget < arrivalThreshold) {
+                // Move to next marker
+                currentRouteIndex++;
+                
+                // If we've reached the end of the route
+                if (currentRouteIndex >= routeMarkers.length) {
+                    velocity.x = 0;
+                    velocity.z = 0;
+                    stopAutoDrive();
+                    return;
+                }
+                return; // Skip the rest of the update to recalculate for new target
+            }
+
+            // Calculate direction to target
+            const directionToTarget = targetPos.clone().sub(vehiclePos).normalize();
+            
+            // Calculate angle to target
+            const targetAngle = Math.atan2(directionToTarget.x, directionToTarget.z);
+            let angleDiff = targetAngle - vehicle.rotation.y;
+            
+            // Normalize angle difference to [-PI, PI]
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+            // Update steering with smoother turning
+            const steeringSpeed = 2.0;
+            vehicle.rotation.y += angleDiff * steeringSpeed * delta;
+
+            // Check for intersection ahead
+            const nearestIntersection = findNearestIntersection(vehiclePos);
+            
+            // Default road speed is 5 km/h
+            let currentSpeed = targetSpeed;
+            let shouldStop = false;
+            let isAtIntersection = false;
+            
+            // If we're near an intersection, reduce speed and check for approaching vehicles
+            if (nearestIntersection && vehiclePos.distanceTo(nearestIntersection) < 20) {
+                const distanceToIntersection = vehiclePos.distanceTo(nearestIntersection);
+                isAtIntersection = true;
+                
+                // At intersection, reduce speed by 2 km/h (to 3 km/h)
+                currentSpeed = targetSpeed - 2;
+                
+                // Check if we're very close to the intersection
+                if (distanceToIntersection < 8) {
+                    // Check for other vehicles near intersection
+                    for (const other of trafficVehicles) {
+                        const otherPos = other.mesh.position;
+                        const otherToIntersectionDist = otherPos.distanceTo(nearestIntersection);
+                        
+                        // If another vehicle is near the intersection and approaching it
+                        if (otherToIntersectionDist < 15 && isVehicleApproachingPoint(other.mesh.position, other.direction, nearestIntersection)) {
+                            // Calculate time to intersection for both vehicles
+                            const ourTimeToIntersection = distanceToIntersection / (currentSpeed + 0.1); // Avoid division by zero
+                            const otherTimeToIntersection = otherToIntersectionDist / (other.speed + 0.1);
+                            
+                            // If the other vehicle will arrive at similar time, stop and yield
+                            if (Math.abs(ourTimeToIntersection - otherTimeToIntersection) < 2) {
+                                shouldStop = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Stop at intersection if not clear
+                    if (shouldStop) {
+                        currentSpeed = 0;
+                    }
+                }
+            } else if (currentRouteIndex > 0 && currentRouteIndex < routeMarkers.length - 1) {
+                // After intersection, gradually increase speed to between 5-8 km/h
+                // Calculate if we've just passed an intersection
+                const prevMarker = routeMarkers[currentRouteIndex - 1];
+                const nextMarker = routeMarkers[currentRouteIndex + 1];
+                
+                // If we're heading to a different direction than we came from, we likely passed an intersection
+                const prevDirection = new THREE.Vector2(
+                    targetMarker.position.x - prevMarker.position.x,
+                    targetMarker.position.z - prevMarker.position.z
+                ).normalize();
+                
+                const nextDirection = new THREE.Vector2(
+                    nextMarker.position.x - targetMarker.position.x,
+                    nextMarker.position.z - targetMarker.position.z
+                ).normalize();
+                
+                // Calculate angle between directions
+                const directionChange = Math.abs(prevDirection.angle() - nextDirection.angle());
+                
+                // If significant turn, we've passed an intersection, so increase speed
+                if (directionChange > 0.5) {
+                    // Gradually increase to 8 km/h based on distance from last marker
+                    const distFromLastMarker = targetMarker.position.distanceTo(prevMarker.position);
+                    const progressFactor = Math.min(distanceToTarget / distFromLastMarker, 1);
+                    currentSpeed = 5 + (progressFactor * 3); // Scale from 5 to 8 km/h
+                }
+            }
+            
+            // Calculate turn and distance factors
+            const turnFactor = 1 - Math.abs(angleDiff) / Math.PI;
+            const distanceFactor = Math.min(distanceToTarget / 20, 1); // Slow down when close to target
+            
+            // Apply speed factors but respect the intersection check
+            let speed = currentSpeed * turnFactor * distanceFactor;
+            if (shouldStop) speed = 0;
+            
+            // Ensure minimum speed unless stopped at intersection
+            if (!shouldStop) {
+                if (isAtIntersection) {
+                    speed = Math.max(speed, 4); // Minimum 4 km/h at intersections (was 2)
+                } else {
+                    speed = Math.max(speed, 3); // Minimum 3 km/h on regular roads
+                }
+            }
+
+            // Calculate forward direction based on vehicle's rotation
+            const forwardX = Math.sin(vehicle.rotation.y);
+            const forwardZ = Math.cos(vehicle.rotation.y);
+
+            // Update position directly using the forward direction
+            vehicle.position.x += forwardX * speed * delta;
+            vehicle.position.z += forwardZ * speed * delta;
+
+            // Update speedometer
+            document.getElementById('speedometer').style.display = 'block';
+            document.getElementById('speedometer').innerText = `Speed: ${Math.round(speed)} km/h`;
+            
+            // Calculate remaining distance to destination
+            const remainingDistance = calculateRemainingDistance();
+            document.getElementById('navInfo').style.display = 'block';
+            document.getElementById('navInfo').innerText = `Distance to destination: ${Math.round(remainingDistance)}m`;
+            
+            // Update next turn indicator
+            updateNextTurnIndicator();
+        }
+
+        // Helper function to check if a vehicle is approaching a specific point
+        function isVehicleApproachingPoint(vehiclePos, vehicleDirection, point) {
+            // Convert to 2D for simpler calculations
+            const pos2D = new THREE.Vector2(vehiclePos.x, vehiclePos.z);
+            const point2D = new THREE.Vector2(point.x, point.z);
+            
+            // Calculate forward vector based on vehicle direction
+            const forward = new THREE.Vector2(Math.sin(vehicleDirection), Math.cos(vehicleDirection));
+            
+            // Vector to the point
+            const toPoint = point2D.clone().sub(pos2D);
+            
+            // Calculate dot product (positive if point is ahead of vehicle)
+            const dotProduct = forward.dot(toPoint.normalize());
+            
+            // Point is ahead if dot product is positive (angle less than 90 degrees)
+            return dotProduct > 0.5; // Point must be generally ahead
+        }
+
+        function clearHighlights() {
+            highlightedBuildings.forEach(mesh => {
+                if (originalColors.has(mesh)) {
+                    mesh.material.color.setHex(originalColors.get(mesh));
+                }
+            });
+            highlightedBuildings = [];
+            originalColors.clear();
+            document.getElementById('buildingCount').innerHTML = '';
+        }
+
+        // Update the toggleViewMode function
+        function toggleViewMode() {
+            if (isFirstPerson) {
+                // Switch back to orbit mode
+                firstPersonControls.unlock();
+                orbitControls.enabled = true;
+                document.getElementById('instructions').style.display = 'none';
+                currentControls = orbitControls;
+                isFirstPerson = false;
+                thirdPersonMode = false;
+                
+                // Reset to aerial view
+                camera.position.set(0, 50, 100);
+                camera.lookAt(0, 0, 0);
+            } else {
+                thirdPersonMode = !thirdPersonMode;
+                if (thirdPersonMode) {
+                    // Switch to third-person mode
+                    orbitControls.enabled = false;
+                    document.getElementById('instructions').style.display = 'block';
+                    currentControls = null;
+                    
+                    // Initialize car position and camera
+                    const carPosition = new THREE.Vector3(-40, 6, -40);
+                    carDirection.set(0, 0, -1);
+                    
+                    // Set initial camera position behind car
+                    const rotatedOffset = cameraOffset.clone();
+                    camera.position.copy(carPosition).add(rotatedOffset);
+                    camera.lookAt(carPosition);
+                } else {
+                    // Switch back to orbit mode
+                    orbitControls.enabled = true;
+                    document.getElementById('instructions').style.display = 'none';
+                    currentControls = orbitControls;
+                    
+                    // Reset to aerial view
+                    camera.position.set(0, 50, 100);
+                    camera.lookAt(0, 0, 0);
+                }
+            }
+        }
+
+        function toggleMiniMap() {
+            isMiniMapVisible = !isMiniMapVisible;
+            document.getElementById('miniMap').style.display = isMiniMapVisible ? 'block' : 'none';
+            document.getElementById('mapLegend').style.display = isMiniMapVisible ? 'block' : 'none';
+            document.getElementById('cardinalDirections').style.display = isMiniMapVisible ? 'block' : 'none';
+        }
+
+        function createMiniMap() {
+            // Create minimap scene
+            miniMapScene = new THREE.Scene();
+            miniMapScene.background = new THREE.Color(0x1a1a1a);
+
+            // Create orthographic camera for top-down view
+            const aspect = 1;
+            const d = 100;
+            miniMapCamera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+            miniMapCamera.position.set(0, 200, 0);
+            miniMapCamera.lookAt(0, 0, 0);
+            miniMapCamera.up.set(0, 0, -1); // Make north point up
+
+            // Create renderer
+            miniMapRenderer = new THREE.WebGLRenderer({ antialias: true });
+            miniMapRenderer.setSize(200, 200);
+            document.getElementById('miniMap').appendChild(miniMapRenderer.domElement);
+
+            // Create simplified versions of buildings for the minimap
+            cityMap.buildings.forEach(building => {
+                const minimapGeometry = new THREE.BoxGeometry(
+                    building.dimensions.width,
+                    2, // Fixed height for minimap
+                    building.dimensions.depth
+                );
+                const minimapMaterial = new THREE.MeshBasicMaterial({
+                    color: BUILDING_TYPES[building.type].color
+                });
+                const minimapBuilding = new THREE.Mesh(minimapGeometry, minimapMaterial);
+                minimapBuilding.position.set(
+                    building.position.x,
+                    1,
+                    building.position.z
+                );
+                miniMapScene.add(minimapBuilding);
+            });
+
+            // Create roads for minimap
+            createMinimapRoads();
+
+            // Create compass rose
+            const roseGeometry = new THREE.CircleGeometry(5, 32);
+            const roseMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x444444,
+                transparent: true,
+                opacity: 0.5
+            });
+            compassRose = new THREE.Mesh(roseGeometry, roseMaterial);
+            compassRose.position.set(-80, 0.2, -80); // Position in top-left corner
+            miniMapScene.add(compassRose);
+
+            // Create cardinal direction lines
+            const directionMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+            
+            // North line
+            const northPoints = [
+                new THREE.Vector3(-80, 0.3, -80),
+                new THREE.Vector3(-80, 0.3, -90)
+            ];
+            const northGeometry = new THREE.BufferGeometry().setFromPoints(northPoints);
+            const northLine = new THREE.Line(northGeometry, directionMaterial);
+            miniMapScene.add(northLine);
+
+            // Replace the cone marker with car model
+            playerMarker = createCarModel(true);
+            playerMarker.rotation.y = Math.PI / 2; // Rotate to face forward
+            miniMapScene.add(playerMarker);
+
+            // Create legend
+            const legend = document.getElementById('mapLegend');
+            Object.entries(BUILDING_TYPES).forEach(([type, config]) => {
+                const item = document.createElement('div');
+                item.className = 'legendItem';
+                item.innerHTML = `
+                    <div class="legendColor" style="background-color: #${config.color.toString(16).padStart(6, '0')}"></div>
+                    <div>${config.label}</div>
+                `;
+                legend.appendChild(item);
+            });
+
+            // Add player marker to legend
+            const playerItem = document.createElement('div');
+            playerItem.className = 'legendItem';
+            playerItem.innerHTML = `
+                <div class="legendColor" style="background-color: #ff0000"></div>
+                <div>You</div>
+            `;
+            legend.appendChild(playerItem);
+        }
+
+        function createMinimapRoads() {
+            const roadMaterial = new THREE.LineBasicMaterial({ color: 0x666666, linewidth: 2 });
+
+            // Create main roads
+            ROAD_NETWORK.mainRoads.forEach(road => {
+                const points = [
+                    new THREE.Vector3(road.start.x, 0.1, road.start.z),
+                    new THREE.Vector3(road.end.x, 0.1, road.end.z)
+                ];
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, roadMaterial);
+                miniMapScene.add(line);
+            });
+
+            // Create cross roads
+            ROAD_NETWORK.crossRoads.forEach(road => {
+                const points = [
+                    new THREE.Vector3(road.start.x, 0.1, road.start.z),
+                    new THREE.Vector3(road.end.x, 0.1, road.end.z)
+                ];
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, roadMaterial);
+                miniMapScene.add(line);
+            });
+        }
+
+        // Add this new function to create a car model
+        function createCarModel(isForMinimap = false) {
+            const carGroup = new THREE.Group();
+            
+            // Car dimensions
+            const carWidth = 4;
+            const carHeight = 1.8;
+            const carLength = 8;
+            
+            // Main body - sedanlike shape
+            const bodyGeometry = new THREE.BoxGeometry(carWidth, carHeight, carLength);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: 0x3366cc,  // Blue color instead of red
+                shininess: 80     // More reflective for car paint look
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 1.1;
+            carGroup.add(body);
+
+            // Cabin/roof - slightly narrower than body
+            const roofWidth = carWidth * 0.8;
+            const roofHeight = carHeight * 1.2;
+            const roofLength = carLength * 0.6;
+            const roofGeometry = new THREE.BoxGeometry(roofWidth, roofHeight, roofLength);
+            const roofMaterial = new THREE.MeshPhongMaterial({
+                color: 0x333333,  // Dark grey
+                shininess: 30
+            });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.y = carHeight + (roofHeight/2) + 0.4;
+            roof.position.z = -carLength * 0.05;  // Shift back slightly
+            carGroup.add(roof);
+
+            // Windows - black glass areas
+            const windowMaterial = new THREE.MeshPhongMaterial({
+                color: 0x111111,  // Dark tint
+                shininess: 100,   // Glassy look
+            });
+            
+            // Windshield
+            const windshieldGeometry = new THREE.BoxGeometry(roofWidth * 0.95, roofHeight * 0.7, 0.1);
+            const windshield = new THREE.Mesh(windshieldGeometry, windowMaterial);
+            windshield.position.y = carHeight + roofHeight * 0.3;
+            windshield.position.z = -roofLength * 0.45 + 0.05;
+            windshield.rotation.x = Math.PI * 0.12;  // Slight angle
+            carGroup.add(windshield);
+            
+            // Rear window
+            const rearWindowGeometry = new THREE.BoxGeometry(roofWidth * 0.95, roofHeight * 0.7, 0.1);
+            const rearWindow = new THREE.Mesh(rearWindowGeometry, windowMaterial);
+            rearWindow.position.y = carHeight + roofHeight * 0.3;
+            rearWindow.position.z = roofLength * 0.45 - 0.05;
+            rearWindow.rotation.x = -Math.PI * 0.12;  // Slight angle
+            carGroup.add(rearWindow);
+
+            // Add wheels
+            const wheelRadius = 0.9;
+            const wheelThickness = 0.4;
+            const wheelGeometry = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelThickness, 12);
+            const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });  // Dark tires
+            
+            // Wheel positions
+            const wheelPositions = [
+                [-carWidth/2 - 0.2, wheelRadius, -carLength/3], // Front left
+                [carWidth/2 + 0.2, wheelRadius, -carLength/3],  // Front right
+                [-carWidth/2 - 0.2, wheelRadius, carLength/3],  // Rear left
+                [carWidth/2 + 0.2, wheelRadius, carLength/3]    // Rear right
+            ];
+            
+            // Create each wheel and add it
+            wheelPositions.forEach(position => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.position.set(...position);
+                wheel.rotation.z = Math.PI / 2;  // Rotate to proper orientation
+                carGroup.add(wheel);
+            });
+
+            // Add headlights
+            const headlightGeometry = new THREE.BoxGeometry(0.8, 0.5, 0.1);
+            const headlightMaterial = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                emissive: isForMinimap ? 0 : 0x666666,  // Slight glow when not on minimap
+                shininess: 100
+            });
+            
+            // Front headlights
+            const leftHeadlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
+            leftHeadlight.position.set(-carWidth/2 + 0.5, carHeight/2, -carLength/2 - 0.05);
+            carGroup.add(leftHeadlight);
+            
+            const rightHeadlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
+            rightHeadlight.position.set(carWidth/2 - 0.5, carHeight/2, -carLength/2 - 0.05);
+            carGroup.add(rightHeadlight);
+            
+            // Taillights
+            const taillightMaterial = new THREE.MeshPhongMaterial({
+                color: 0xff0000,
+                emissive: isForMinimap ? 0 : 0x330000,  // Slight red glow
+                shininess: 80
+            });
+            
+            const leftTaillight = new THREE.Mesh(headlightGeometry, taillightMaterial);
+            leftTaillight.position.set(-carWidth/2 + 0.5, carHeight/2, carLength/2 + 0.05);
+            carGroup.add(leftTaillight);
+            
+            const rightTaillight = new THREE.Mesh(headlightGeometry, taillightMaterial);
+            rightTaillight.position.set(carWidth/2 - 0.5, carHeight/2, carLength/2 + 0.05);
+            carGroup.add(rightTaillight);
+
+            // Scale down if this is for the minimap
+            if (isForMinimap) {
+                carGroup.scale.set(0.5, 0.5, 0.5);
+            }
+            
+            return carGroup;
+        }
+
+        // Simple route marker creation
+        function createRouteMarker(position) {
+            const markerGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+            const markerMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffff00,
+                transparent: true,
+                opacity: 0.8
+            });
+            const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+            marker.position.copy(position);
+            marker.position.y = 0.3; // Slightly above the road
+            return marker;
+        }
+
+        // Simple route creation
+        function createRouteTo(targetBuilding) {
+            // Clear existing route
+            clearRoute();
+            
+            // Find nearest road points to car and target
+            const carRoadPoint = findNearestRoadPoint(vehicle.position);
+            const targetRoadPoint = findNearestRoadPoint(targetBuilding.position);
+            
+            if (!carRoadPoint || !targetRoadPoint) return;
+
+            // Find path through road network
+            const path = findPathThroughRoads(carRoadPoint, targetRoadPoint);
+            if (!path) return;
+
+            // Create route markers from car to first road point
+            const numMarkersToRoad = 5;
+            for (let i = 0; i < numMarkersToRoad; i++) {
+                const t = i / (numMarkersToRoad - 1);
+                const position = new THREE.Vector3()
+                    .lerpVectors(vehicle.position, path[0], t);
+                
+                const marker = createRouteMarker(position);
+                scene.add(marker);
+                routeMarkers.push(marker);
+            }
+            
+            // Create route markers along the road path
+            for (let i = 0; i < path.length - 1; i++) {
+                const start = path[i];
+                const end = path[i + 1];
+                const numMarkersOnSegment = 10;
+
+                // Calculate road direction and normal
+                const roadDir = new THREE.Vector2(
+                    end.x - start.x,
+                    end.z - start.z
+                ).normalize();
+                const roadNormal = new THREE.Vector2(-roadDir.y, roadDir.x);
+
+                // Determine if we're on a main road or cross road
+                const isMainRoad = ROAD_NETWORK.mainRoads.some(road => 
+                    (Math.abs(road.start.x - start.x) < 0.1 && Math.abs(road.start.z - start.z) < 0.1) ||
+                    (Math.abs(road.end.x - start.x) < 0.1 && Math.abs(road.end.z - start.z) < 0.1)
+                );
+                const roadConfig = isMainRoad ? ROAD_CONFIG.main : ROAD_CONFIG.cross;
+                
+                for (let j = 0; j < numMarkersOnSegment; j++) {
+                    const t = j / numMarkersOnSegment;
+                    // Get base position on the road
+                    const basePos = new THREE.Vector3()
+                        .lerpVectors(start, end, t);
+
+                    // Calculate lane offset (always stay on the left side)
+                    const laneOffset = roadNormal.clone().multiplyScalar(roadConfig.markings.laneOffset);
+                    
+                    // Apply lane offset to position
+                    const position = new THREE.Vector3(
+                        basePos.x + laneOffset.x,
+                        basePos.y,
+                        basePos.z + laneOffset.y
+                    );
+                    
+                    const marker = createRouteMarker(position);
+                    scene.add(marker);
+                    routeMarkers.push(marker);
+                }
+            }
+            
+            // Create route markers from last road point to building
+            const numMarkersToBldg = 5;
+            for (let i = 0; i < numMarkersToBldg; i++) {
+                const t = i / (numMarkersToBldg - 1);
+                const position = new THREE.Vector3()
+                    .lerpVectors(path[path.length - 1], targetBuilding.position, t);
+                
+                const marker = createRouteMarker(position);
+                scene.add(marker);
+                routeMarkers.push(marker);
+            }
+
+            currentRoute = routeMarkers;
+        }
+
+        // Function to find path through road network
+        function findPathThroughRoads(start, end) {
+            // Find the nearest intersection points
+            const startIntersection = findNearestIntersection(start);
+            const endIntersection = findNearestIntersection(end);
+            
+            if (!startIntersection || !endIntersection) return null;
+            
+            // Create path through intersections
+            const path = [start];
+            
+            // Add path from start to first intersection
+            path.push(startIntersection);
+            
+            // Find path between intersections
+            if (startIntersection.x !== endIntersection.x) {
+                // Move horizontally first
+                path.push(new THREE.Vector3(endIntersection.x, 0, startIntersection.z));
+            }
+            
+            // Add end intersection if different from previous point
+            if (!path[path.length - 1].equals(endIntersection)) {
+                path.push(endIntersection);
+            }
+            
+            // Add final target point
+            path.push(end);
+            
+            return path;
+        }
+
+        // Function to find nearest intersection
+        function findNearestIntersection(point) {
+            let nearestIntersection = null;
+            let minDistance = Infinity;
+            
+            // Check all possible intersections
+            ROAD_NETWORK.mainRoads.forEach(mainRoad => {
+                ROAD_NETWORK.crossRoads.forEach(crossRoad => {
+                    const intersection = findIntersection(
+                        mainRoad.start.x, mainRoad.start.z,
+                        mainRoad.end.x, mainRoad.end.z,
+                        crossRoad.start.x, crossRoad.start.z,
+                        crossRoad.end.x, crossRoad.end.z
+                    );
+                    
+                    if (intersection) {
+                        const distance = new THREE.Vector2(point.x - intersection.x, point.z - intersection.z).length();
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            nearestIntersection = new THREE.Vector3(intersection.x, 0, intersection.z);
+                        }
+                    }
+                });
+            });
+            
+            return nearestIntersection;
+        }
+
+        // Simple nearest road point finder
+        function findNearestRoadPoint(position) {
+            let nearestPoint = null;
+            let minDistance = Infinity;
+            
+            // Check all roads
+            [...ROAD_NETWORK.mainRoads, ...ROAD_NETWORK.crossRoads].forEach(road => {
+                const roadStart = new THREE.Vector2(road.start.x, road.start.z);
+                const roadEnd = new THREE.Vector2(road.end.x, road.end.z);
+                const point = new THREE.Vector2(position.x, position.z);
+                
+                // Project point onto road segment
+                const roadVector = roadEnd.clone().sub(roadStart);
+                const pointVector = point.clone().sub(roadStart);
+                const roadLength = roadVector.length();
+                const projection = pointVector.dot(roadVector) / roadLength;
+                
+                if (projection >= 0 && projection <= roadLength) {
+                    const projectedPoint = roadStart.clone().add(roadVector.normalize().multiplyScalar(projection));
+                    const distance = point.distanceTo(projectedPoint);
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearestPoint = new THREE.Vector3(projectedPoint.x, 0, projectedPoint.y);
+                    }
+                }
+            });
+            
+            return nearestPoint;
+        }
+
+        // Simple route clearing
+        function clearRoute() {
+            routeMarkers.forEach(marker => scene.remove(marker));
+            routeMarkers = [];
+            currentRoute = null;
+        }
+
+        function createBuilding(type, x, z) {
+            const buildingType = BUILDING_TYPES[type];
+            const width = Math.random() * (buildingType.maxSize.width - buildingType.minSize.width) + buildingType.minSize.width;
+            const height = Math.random() * (buildingType.maxSize.height - buildingType.minSize.height) + buildingType.minSize.height;
+            const depth = Math.random() * (buildingType.maxSize.depth - buildingType.minSize.depth) + buildingType.minSize.depth;
+
+            // Validate position with building dimensions
+            if (!isValidBuildingPosition(x, z, width, depth)) {
+                return null;
+            }
+
+            // Create building geometry
+            const geometry = new THREE.BoxGeometry(width, height, depth);
+            const material = new THREE.MeshPhongMaterial({ color: buildingType.color });
+            const building = new THREE.Mesh(geometry, material);
+            
+            building.position.set(x, height / 2, z);
+            scene.add(building);
+
+            // Store building information
+            return {
+                type: type,
+                mainMesh: building,
+                position: building.position,
+                dimensions: { width, height, depth }
+            };
+        }
+
+        function createAIVehicle(startPosition, direction, type = 'sedan') {
+            const vehicleType = VEHICLE_TYPES[type];
+            const vehicle = new THREE.Group();
+            
+            // Create main body
+            const bodyGeometry = new THREE.BoxGeometry(
+                vehicleType.width,
+                vehicleType.height,
+                vehicleType.length
+            );
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: vehicleType.color,
+                shininess: 30
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = vehicleType.height / 2;
+            vehicle.add(body);
+
+            // Add windows (black top part)
+            const windowGeometry = new THREE.BoxGeometry(
+                vehicleType.width * 0.8,
+                vehicleType.height * 0.4,
+                vehicleType.length * 0.6
+            );
+            const windowMaterial = new THREE.MeshPhongMaterial({
+                color: 0x111111,
+                shininess: 40
+            });
+            const windows = new THREE.Mesh(windowGeometry, windowMaterial);
+            windows.position.y = vehicleType.height * 0.7;
+            vehicle.add(windows);
+
+            // Add wheels
+            const wheelGeometry = new THREE.CylinderGeometry(1, 1, 0.5, 8);
+            const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            const wheelPositions = [
+                [-vehicleType.width/2, 1, -vehicleType.length/3],
+                [vehicleType.width/2, 1, -vehicleType.length/3],
+                [-vehicleType.width/2, 1, vehicleType.length/3],
+                [vehicleType.width/2, 1, vehicleType.length/3]
+            ];
+
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(...pos);
+                vehicle.add(wheel);
+            });
+
+            // Add lights
+            const lightGeometry = new THREE.BoxGeometry(1, 0.5, 0.1);
+            const frontLightMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFFFFFF,
+                emissive: 0xFFFFFF,
+                emissiveIntensity: 0.5
+            });
+            const rearLightMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFF0000,
+                emissive: 0xFF0000,
+                emissiveIntensity: 0.5
+            });
+
+            // Front lights
+            [-vehicleType.width/3, vehicleType.width/3].forEach(x => {
+                const light = new THREE.Mesh(lightGeometry, frontLightMaterial);
+                light.position.set(x, vehicleType.height/2, -vehicleType.length/2);
+                vehicle.add(light);
+            });
+
+            // Rear lights
+            [-vehicleType.width/3, vehicleType.width/3].forEach(x => {
+                const light = new THREE.Mesh(lightGeometry, rearLightMaterial);
+                light.position.set(x, vehicleType.height/2, vehicleType.length/2);
+                vehicle.add(light);
+            });
+
+            vehicle.position.copy(startPosition);
+            vehicle.rotation.y = direction;
+            scene.add(vehicle);
+
+            return {
+                mesh: vehicle,
+                speed: TRAFFIC_CONFIG.minSpeed,  // Use constant speed instead of random variation
+                direction: direction,
+                type: type,
+                currentRoad: null,
+                nextIntersection: null,
+                state: 'driving',
+                waitTime: 0
+            };
+        }
+
+        function spawnTrafficVehicle() {
+            console.log("Attempting to spawn traffic vehicle...");
+            // Choose a random road
+            const roads = [...ROAD_NETWORK.mainRoads, ...ROAD_NETWORK.crossRoads];
+            const road = roads[Math.floor(Math.random() * roads.length)];
+            console.log("Selected road:", road);
+            
+            // Choose a random position along the road
+            const t = Math.random();
+            const basePosition = new THREE.Vector3(
+                road.start.x + (road.end.x - road.start.x) * t,
+                0,
+                road.start.z + (road.end.z - road.start.z) * t
+            );
+            
+            // Calculate direction along road
+            const roadDir = new THREE.Vector2(
+                road.end.x - road.start.x,
+                road.end.z - road.start.z
+            ).normalize();
+            
+            // Calculate road normal (perpendicular to road direction)
+            const roadNormal = new THREE.Vector2(-roadDir.y, roadDir.x);
+            
+            // Determine if it's a main road or cross road
+            const isMainRoad = ROAD_NETWORK.mainRoads.includes(road);
+            const roadConfig = isMainRoad ? ROAD_CONFIG.main : ROAD_CONFIG.cross;
+            
+            // Randomly choose whether vehicle is going forward or backward along the road
+            const forwardDirection = Math.random() > 0.5;
+            
+            // Calculate vehicle direction angle
+            const direction = forwardDirection ? 
+                Math.atan2(roadDir.x, roadDir.y) : 
+                Math.atan2(-roadDir.x, -roadDir.y);
+            
+            // Apply lane offset based on direction (drive on left side of road)
+            // If going forward, apply negative offset; if going backward, apply positive offset
+            const laneOffset = forwardDirection ? -1 : 1;
+            const offsetAmount = roadConfig.markings.laneOffset * laneOffset;
+            
+            // Apply offset to position
+            const position = new THREE.Vector3(
+                basePosition.x + roadNormal.x * offsetAmount,
+                basePosition.y,
+                basePosition.z + roadNormal.y * offsetAmount
+            );
+            
+            console.log("Calculated position:", position, "Direction:", direction);
+
+            // Only spawn if far enough from player
+            const distanceFromPlayer = position.distanceTo(vehicle.position);
+            console.log("Distance from player:", distanceFromPlayer);
+            
+            if (distanceFromPlayer > TRAFFIC_CONFIG.spawnDistance) {
+                // Choose vehicle type based on probability
+                const rand = Math.random();
+                let type = 'sedan';
+                let cumProb = 0;
+                for (const [vType, config] of Object.entries(VEHICLE_TYPES)) {
+                    cumProb += config.probability;
+                    if (rand <= cumProb) {
+                        type = vType;
+                        break;
+                    }
+                }
+                console.log("Selected vehicle type:", type);
+
+                // Create and add the vehicle
+                const trafficVehicle = createAIVehicle(position, direction, type);
+                trafficVehicles.push(trafficVehicle);
+                console.log("Vehicle created and added to traffic system");
+            } else {
+                console.log("Vehicle spawn cancelled - too close to player");
+            }
+        }
+
+        // Collision avoidance configuration
+        const COLLISION_CONFIG = {
+            minDistance: 8,         // Absolute minimum distance between vehicles
+            slowDistance: 20,       // Start slowing down at this distance
+            stopDistance: 10,       // Come to complete stop at this distance
+            intersectionBuffer: 12, // Safety zone around intersections
+            brakingForce: 30,      // Very strong braking
+            accelerationForce: 5    // Gentle acceleration
+        };
+
+        function updateTrafficVehicles(delta) {
+            const playerPos = vehicle.position;
+            
+            trafficVehicles = trafficVehicles.filter(traffic => {
+                const distance = traffic.mesh.position.distanceTo(playerPos);
+                
+                if (distance > TRAFFIC_CONFIG.despawnDistance) {
+                    scene.remove(traffic.mesh);
+                    return false;
+                }
+
+                // Check for immediate collisions first
+                let shouldStop = false;
+                let shouldSlow = false;
+
+                // Check collision with player
+                const distToPlayer = traffic.mesh.position.distanceTo(playerPos);
+                if (isVehicleAhead(traffic.mesh.position, traffic.direction, playerPos)) {
+                    if (distToPlayer < COLLISION_CONFIG.stopDistance) {
+                        shouldStop = true;
+                    } else if (distToPlayer < COLLISION_CONFIG.slowDistance) {
+                        shouldSlow = true;
+                    }
+                }
+
+                // Check collision with other vehicles
+                trafficVehicles.forEach(other => {
+                    if (other !== traffic) {
+                        const distToOther = traffic.mesh.position.distanceTo(other.mesh.position);
+                        if (isVehicleAhead(traffic.mesh.position, traffic.direction, other.mesh.position)) {
+                            if (distToOther < COLLISION_CONFIG.stopDistance) {
+                                shouldStop = true;
+                            } else if (distToOther < COLLISION_CONFIG.slowDistance) {
+                                shouldSlow = true;
+                            }
+                        }
+                    }
+                });
+
+                // Hard stop if too close
+                if (shouldStop) {
+                    traffic.speed = 0;
+                }
+                // Slow down if approaching
+                else if (shouldSlow) {
+                    traffic.speed = Math.max(0, traffic.speed - COLLISION_CONFIG.brakingForce * delta);
+                }
+                // Otherwise, gradually return to normal speed
+                else {
+                    traffic.speed = Math.min(
+                        TRAFFIC_CONFIG.minSpeed,
+                        traffic.speed + COLLISION_CONFIG.accelerationForce * delta
+                    );
+                }
+
+                // Only move if not stopped
+                if (traffic.speed > 0) {
+                    // Find nearest road for lane following
+                    const nearestRoad = findNearestRoad(traffic.mesh.position);
+                    
+                    if (nearestRoad) {
+                        // Determine if it's a main road or cross road
+                        const isMainRoad = ROAD_NETWORK.mainRoads.includes(nearestRoad);
+                        const roadConfig = isMainRoad ? ROAD_CONFIG.main : ROAD_CONFIG.cross;
+                        
+                        // Calculate road direction vector
+                        const roadDir = new THREE.Vector2(
+                            nearestRoad.end.x - nearestRoad.start.x,
+                            nearestRoad.end.z - nearestRoad.start.z
+                        ).normalize();
+                        
+                        // Calculate traffic's direction vector
+                        const trafficDirVector = new THREE.Vector2(
+                            Math.sin(traffic.direction),
+                            Math.cos(traffic.direction)
+                        );
+                        
+                        // Calculate road normal (perpendicular to road direction)
+                        const roadNormal = new THREE.Vector2(-roadDir.y, roadDir.x);
+                        
+                        // Determine which side of the road to drive on based on direction
+                        // If dot product is positive, vehicle is moving in similar direction as road
+                        const dotProduct = roadDir.dot(trafficDirVector);
+                        const sideMultiplier = dotProduct > 0 ? -1 : 1; // Left side of road
+                        
+                        const idealOffset = roadNormal.clone().multiplyScalar(roadConfig.markings.laneOffset * sideMultiplier);
+                        
+                        // Project current position onto road
+                        const roadStart = new THREE.Vector2(nearestRoad.start.x, nearestRoad.start.z);
+                        const pos2D = new THREE.Vector2(traffic.mesh.position.x, traffic.mesh.position.z);
+                        const projectedPos = projectPointOntoLine(pos2D, roadStart, roadDir);
+                        const targetPos = projectedPos.add(idealOffset);
+                        
+                        // Smoothly move towards ideal lane position
+                        const currentPos2D = new THREE.Vector2(traffic.mesh.position.x, traffic.mesh.position.z);
+                        const lerpFactor = 0.1; // Lane correction strength
+                        const newPos = currentPos2D.lerp(targetPos, lerpFactor);
+                        
+                        // Basic movement along vehicle's direction
+                        const moveX = Math.sin(traffic.direction) * traffic.speed * delta;
+                        const moveZ = Math.cos(traffic.direction) * traffic.speed * delta;
+                        
+                        // Apply combined movement (forward motion + lane correction)
+                        traffic.mesh.position.x = newPos.x + moveX;
+                        traffic.mesh.position.z = newPos.y + moveZ;
+                    } else {
+                        // If not near a road, just move forward
+                        const movement = new THREE.Vector3(
+                            Math.sin(traffic.direction) * traffic.speed * delta,
+                            0,
+                            Math.cos(traffic.direction) * traffic.speed * delta
+                        );
+                        
+                        // Check if movement would cause collision
+                        const nextPos = traffic.mesh.position.clone().add(movement);
+                        let wouldCollide = false;
+                        
+                        // Check collision with player at next position
+                        if (nextPos.distanceTo(playerPos) < COLLISION_CONFIG.minDistance) {
+                            wouldCollide = true;
+                        }
+                        
+                        // Check collision with other vehicles at next position
+                        trafficVehicles.forEach(other => {
+                            if (other !== traffic && nextPos.distanceTo(other.mesh.position) < COLLISION_CONFIG.minDistance) {
+                                wouldCollide = true;
+                            }
+                        });
+                        
+                        // Only apply movement if it wouldn't cause a collision
+                        if (!wouldCollide) {
+                            traffic.mesh.position.add(movement);
+                        } else {
+                            traffic.speed = 0; // Stop if movement would cause collision
+                        }
+                    }
+                }
+
+                return true;
+            });
+
+            // Spawn new vehicles if needed
+            if (trafficVehicles.length < TRAFFIC_CONFIG.vehicleCount) {
+                spawnTrafficVehicle();
+            }
+        }
+
+        // Add helper function for projecting a point onto a line
+        function projectPointOntoLine(point, lineStart, lineDir) {
+            // Vector from line start to point
+            const toPoint = point.clone().sub(lineStart);
+            
+            // Project this vector onto the line direction
+            const projectionLength = toPoint.dot(lineDir);
+            
+            // Calculate the projected point
+            return lineStart.clone().add(lineDir.clone().multiplyScalar(projectionLength));
+        }
+
+        function isVehicleAhead(position, direction, targetPosition) {
+            // Convert positions to 2D vectors for simpler calculations
+            const pos2D = new THREE.Vector2(position.x, position.z);
+            const target2D = new THREE.Vector2(targetPosition.x, targetPosition.z);
+            
+            // Calculate forward vector
+            const forward = new THREE.Vector2(Math.sin(direction), Math.cos(direction));
+            
+            // Calculate vector to target
+            const toTarget = target2D.clone().sub(pos2D);
+            
+            // Calculate angle between forward direction and target
+            const angle = forward.angle() - toTarget.angle();
+            
+            // Normalize angle to [-PI, PI]
+            const normalizedAngle = ((angle + Math.PI) % (Math.PI * 2)) - Math.PI;
+            
+            // Vehicle is ahead if it's within a 60-degree cone in front
+            return Math.abs(normalizedAngle) < Math.PI / 3;
+        }
+
+        function findNearestRoad(position) {
+            let nearestRoad = null;
+            let minDistance = Infinity;
+            
+            // Check all roads
+            [...ROAD_NETWORK.mainRoads, ...ROAD_NETWORK.crossRoads].forEach(road => {
+                const distance = distanceToRoad(
+                    position,
+                    new THREE.Vector3(road.start.x, 0, road.start.z),
+                    new THREE.Vector3(road.end.x, 0, road.end.z)
+                );
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestRoad = road;
+                }
+            });
+            
+            return nearestRoad;
+        }
+
+        function distanceToRoad(point, roadStart, roadEnd) {
+            const roadDir = new THREE.Vector3()
+                .subVectors(roadEnd, roadStart)
+                .normalize();
+            const pointVector = new THREE.Vector3()
+                .subVectors(point, roadStart);
+            
+            const projection = pointVector.dot(roadDir);
+            
+            if (projection < 0) {
+                return point.distanceTo(roadStart);
+            }
+            
+            const roadLength = roadStart.distanceTo(roadEnd);
+            if (projection > roadLength) {
+                return point.distanceTo(roadEnd);
+            }
+            
+            const projectedPoint = new THREE.Vector3()
+                .copy(roadStart)
+                .add(roadDir.multiplyScalar(projection));
+            
+            return point.distanceTo(projectedPoint);
+        }
+
+        function projectPointOntoLine(point, lineStart, lineDir) {
+            const pointVector = new THREE.Vector2()
+                .subVectors(point, lineStart);
+            const projection = pointVector.dot(lineDir);
+            return new THREE.Vector2()
+                .copy(lineStart)
+                .add(lineDir.multiplyScalar(projection));
+        }
+
+        // Helper function to calculate remaining distance to destination
+        function calculateRemainingDistance() {
+            // If no route, return 0
+            if (!currentRoute || !routeMarkers.length) return 0;
+            
+            const vehiclePos = new THREE.Vector3(vehicle.position.x, 0, vehicle.position.z);
+            let totalDistance = 0;
+            
+            // Distance to next marker
+            if (currentRouteIndex < routeMarkers.length) {
+                const targetMarker = routeMarkers[currentRouteIndex];
+                totalDistance += vehiclePos.distanceTo(targetMarker.position);
+            }
+            
+            // Add distances between remaining markers
+            for (let i = currentRouteIndex; i < routeMarkers.length - 1; i++) {
+                const currentMarker = routeMarkers[i];
+                const nextMarker = routeMarkers[i + 1];
+                totalDistance += currentMarker.position.distanceTo(nextMarker.position);
+            }
+            
+            return totalDistance;
+        }
+
+        // Helper function to update next turn indicator
+        function updateNextTurnIndicator() {
+            // If no route or we're at the last marker, show arriving
+            if (!currentRoute || currentRouteIndex >= routeMarkers.length - 1) {
+                document.getElementById('navInfo').innerText += ' | ARRIVING';
+                return;
+            }
+            
+            const vehiclePos = new THREE.Vector3(vehicle.position.x, 0, vehicle.position.z);
+            const currentMarker = routeMarkers[currentRouteIndex];
+            const nextMarker = routeMarkers[currentRouteIndex + 1];
+            
+            // Calculate current direction
+            const currentDirection = Math.atan2(
+                currentMarker.position.x - vehiclePos.x,
+                currentMarker.position.z - vehiclePos.z
+            );
+            
+            // Calculate next direction
+            const nextDirection = Math.atan2(
+                nextMarker.position.x - currentMarker.position.x,
+                nextMarker.position.z - currentMarker.position.z
+            );
+            
+            // Calculate turn angle
+            let turnAngle = nextDirection - currentDirection;
+            
+            // Normalize angle to [-PI, PI]
+            while (turnAngle > Math.PI) turnAngle -= Math.PI * 2;
+            while (turnAngle < -Math.PI) turnAngle += Math.PI * 2;
+            
+            // Determine turn direction
+            let turnDirection = 'STRAIGHT';
+            if (Math.abs(turnAngle) > 0.5) { // About 30 degrees threshold
+                turnDirection = turnAngle > 0 ? 'RIGHT' : 'LEFT';
+            }
+            
+            // Update navigation info
+            document.getElementById('navInfo').innerText += ` | Next: ${turnDirection}`;
+        }
+
+        // Add this function to toggle between manual and autonomous driving
+        function toggleDriveMode() {
+            const toggleBtn = document.getElementById('driveModeToggle');
+            
+            if (isAutoDriving) {
+                // Switch to manual mode
+                stopAutoDrive();
+                toggleBtn.textContent = "Switch to Autonomous Driving";
+                toggleBtn.classList.add("manual");
+                
+                // Show speedometer for manual driving
+                document.getElementById('speedometer').style.display = 'block';
+                document.getElementById('speedometer').innerText = `Speed: 0 km/h`;
+                
+                // Enable manual controls if they were disabled
+                moveForward = false;
+                moveBackward = false;
+                steerLeft = false;
+                steerRight = false;
+            } else {
+                // Only switch to autonomous if a route exists
+                if (currentRoute && routeMarkers.length > 0) {
+                    startAutoDrive();
+                    toggleBtn.textContent = "Switch to Manual Driving";
+                    toggleBtn.classList.remove("manual");
+                } else {
+                    // Inform user they need to select a destination first
+                    alert("Please select a destination first by clicking on a building.");
+                }
+            }
+        }
+
+  </script>
+</body>
+</html>  
